@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Webhook Polaria</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #ff6d59; /* Color estilo n8n */
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #e65c49;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #2b2b2b;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 20px;
+            display: none; /* Se oculta hasta que haya una respuesta */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Enviar datos de prueba a n8n</h2>
+        <p>Haz clic en el botón para enviar el JSON simulado al webhook de tu flujo de salida.</p>
+        <p><small><strong>Importante:</strong> abre esta página en
+        <a href="http://localhost:3000/MATEO%20PRUEBA%20JSON.html">http://localhost:3000/MATEO PRUEBA JSON.html</a>
+        (con <code>node server.js</code> corriendo). No uses doble clic en el archivo.</small></p>
+        
+        <button id="btnEnviar" onclick="enviarSimulacion()">Enviar solicitud de compra</button>
+        
+        <pre id="resultado"></pre>
+    </div>
+
+    <script>
+        async function enviarSimulacion() {
+            const btn = document.getElementById('btnEnviar');
+            const resultado = document.getElementById('resultado');
+
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+            resultado.style.display = "block";
+            resultado.innerText = "Enviando a n8n...";
+
+            try {
+                if (!window.location.protocol.startsWith('http')) {
+                    throw new Error(
+                        'Abre http://localhost:3000/MATEO%20PRUEBA%20JSON.html con node server.js corriendo.'
+                    );
+                }
+
+                const URL_WEBHOOK = `${window.location.origin}/enviar-solicitud`;
+                resultado.innerText = `Enviando a n8n vía ${URL_WEBHOOK} ...`;
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+                const payload = {
+                    telefono: "573017447947",
+                    codeCuenta: "CTA-102938",
+                    estado: "NUEVO",
+                    lineItems: [
+                        { id_producto: "PROD-001", descripcion: "Resmas de papel", cantidad: 50 },
+                        { id_producto: "PROD-005", descripcion: "Tóner negro", cantidad: 5 }
+                    ],
+                    proveedor_nombre: "Distribuidora Papelera S.A.",
+                    proveedorCode: "PROV-8472",
+                    proveedorId: "ID-992837",
+                    idcliente: "CLI-556677",
+                    mensaje_final: "Hola, solicito cotización de los insumos detallados."
+                };
+
+                const response = await fetch(URL_WEBHOOK, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+                const data = await response.text();
+                resultado.innerText = `Estado HTTP: ${response.status}\n\nRespuesta:\n${data}`;
+
+            } catch (error) {
+                const msg = error.name === 'AbortError'
+                    ? 'Timeout: n8n no respondió en 60 segundos.'
+                    : error.message;
+                resultado.innerText = `Error:\n${msg}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Enviar solicitud de compra";
+            }
+        }
+    </script>
+
+</body>
+</html>

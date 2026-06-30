@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <title>Polaria AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              base: "#0f1117",
+              surface: "#171923",
+              surfaceAlt: "#1f2937",
+              border: "#2c2f3a",
+              input: "#232734",
+              inputBorder: "#2f3444",
+              accent: "#2563eb",
+              accentHover: "#1d4ed8",
+              textMuted: "#e5e7eb",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+
+  <body class="bg-base text-white font-['Segoe_UI',sans-serif] h-screen">
+    <div class="flex flex-col h-screen">
+
+      <!-- Header -->
+      <div class="h-[65px] bg-surface border-b border-border flex items-center px-6 text-xl font-semibold shrink-0">
+        🤖 Polaria AI
+      </div>
+
+      <!-- Messages -->
+      <div id="chat" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth
+        [&::-webkit-scrollbar]:w-2
+        [&::-webkit-scrollbar-track]:bg-transparent
+        [&::-webkit-scrollbar-thumb]:bg-[#303544]
+        [&::-webkit-scrollbar-thumb]:rounded-full">
+      </div>
+
+      <!-- Input -->
+      <div class="flex gap-3 p-5 bg-surface border-t border-border shrink-0">
+        <input
+          id="mensaje"
+          type="text"
+          placeholder="Escribe un mensaje..."
+          onkeydown="if(event.key==='Enter') enviar();"
+          class="flex-1 bg-input border border-inputBorder text-white rounded-xl px-4 py-3 text-[15px] outline-none focus:border-accent transition-colors"
+        />
+        <button
+          onclick="enviar()"
+          class="bg-accent hover:bg-accentHover text-white font-semibold px-6 rounded-xl transition-colors cursor-pointer border-none"
+        >
+          Enviar
+        </button>
+      </div>
+
+    </div>
+
+    <script src="/n8n-config.js"></script>
+    <script>
+      const PHONE_NUMBER_ID = "1104260132766227";
+      const USER_PHONE = "573006188395";
+
+      async function enviar() {
+        const input = document.getElementById("mensaje");
+        const texto = input.value.trim();
+
+        if (!texto) return;
+
+        agregar(texto, "usuario");
+        input.value = "";
+
+        const payload = {
+          entry: [{
+            changes: [{
+              value: {
+                metadata: { phone_number_id: PHONE_NUMBER_ID },
+                messages: [{
+                  from: USER_PHONE,
+                  id: "wamid." + crypto.randomUUID().replace(/-/g, ""),
+                  type: "text",
+                  text: { body: texto },
+                }],
+              },
+            }],
+          }],
+        };
+
+        try {
+          const response = await fetch(N8N.getUrl('mateocompras'), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+          agregar(data.output ?? data.reply ?? JSON.stringify(data), "ia");
+        } catch (error) {
+          agregar("Error al conectar con el servidor.", "ia");
+        }
+      }
+
+      function agregar(texto, tipo) {
+        const chat = document.getElementById("chat");
+        const div = document.createElement("div");
+
+        const esUsuario = tipo === "usuario";
+
+        div.className = [
+          "max-w-[75%] px-[18px] py-[14px] leading-relaxed whitespace-pre-wrap break-words",
+          esUsuario
+            ? "self-end bg-accent text-white rounded-[18px] rounded-br-[5px]"
+            : "self-start bg-surfaceAlt text-textMuted rounded-[18px] rounded-bl-[5px]",
+        ].join(" ");
+
+        div.textContent = texto;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

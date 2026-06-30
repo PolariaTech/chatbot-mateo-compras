@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Binarios y herramientas locales
+ngrok.exe
+ngrok
+*.exe
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Caché y temporales
+.cache/
+tmp/
+temp/

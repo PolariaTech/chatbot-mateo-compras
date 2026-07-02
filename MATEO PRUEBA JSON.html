@@ -83,19 +83,20 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-                const payload = {
-                    telefono: "573017447947",
-                    codeCuenta: "CTA-102938",
-                    estado: "NUEVO",
-                    lineItems: [
-                        { id_producto: "PROD-001", descripcion: "Resmas de papel", cantidad: 50 },
-                        { id_producto: "PROD-005", descripcion: "Tóner negro", cantidad: 5 }
-                    ],
-                    proveedor_nombre: "Distribuidora Papelera S.A.",
-                    proveedorCode: "PROV-8472",
-                    proveedorId: "ID-992837",
-                    idcliente: "CLI-556677",
-                    mensaje_final: "Hola, solicito cotización de los insumos detallados."
+                const payload = {                  
+                    codigo_cuenta: "49M04",                    
+                    telefono: "+573017447947",  
+                    id_proveedor: "88522d67-4de0-428e-8bec-bf2581916df0",                  
+                    razon_social: "Pat-lafrieda",
+                    codigo: "60ERA",
+                    estado: "borrador",
+                    solicitud_compra_linea: [
+                        { id_producto: "5dbb31df-e070-407e-bb05-d7714afd0a98",sku: "OH2WF", descripcion: "Frozen-Lamb Racks", cantidad: 300 },
+                        { id_producto: "53920736-8186-4b0d-a837-ad6b64fcad04",sku: "IOZ7Z", descripcion: "HPR FROZEN-PORK RACKS", cantidad: 450 },
+                        { id_producto: "3d51c07b-41f1-445f-bb86-e2d0ba11ba4a",sku: "AT1B7", descripcion: "RECORTE SHORT RIB HC", cantidad: 450 }
+                    ],                    
+                  
+                    mensaje_final: "Hola, solicito cotización de los productos detallados."
                 };
 
                 const response = await fetch(URL_WEBHOOK, {

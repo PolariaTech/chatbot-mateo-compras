@@ -60,6 +60,7 @@
     </div>
 
     <script src="/n8n-config.js"></script>
+    <script src="/formato-texto.js"></script>
     <script>
       const PHONE_NUMBER_ID = "1104260132766227";
       const USER_PHONE = "573006188395";
@@ -110,13 +111,17 @@
         const esUsuario = tipo === "usuario";
 
         div.className = [
-          "max-w-[75%] px-[18px] py-[14px] leading-relaxed whitespace-pre-wrap break-words",
+          "max-w-[75%] px-[18px] py-[14px] leading-relaxed break-words",
           esUsuario
-            ? "self-end bg-accent text-white rounded-[18px] rounded-br-[5px]"
+            ? "self-end bg-accent text-white rounded-[18px] rounded-br-[5px] whitespace-pre-wrap"
             : "self-start bg-surfaceAlt text-textMuted rounded-[18px] rounded-bl-[5px]",
         ].join(" ");
 
-        div.textContent = texto;
+        if (esUsuario) {
+          div.textContent = texto;
+        } else {
+          div.innerHTML = formatearMarkdown(texto);
+        }
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
       }

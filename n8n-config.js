@@ -6,7 +6,7 @@
  */
 const N8N = {
     BASE_URL: 'https://polariatech.app.n8n.cloud',
-    MODO: 'produccion',
+    MODO: 'test',
 
     WEBHOOKS: {
         mateocompras: 'mateocompras',

@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -144,6 +146,13 @@ app.post('/enviar-solicitud', async (req, res) => {
     } finally {
         clearTimeout(timeout);
     }
+});
+
+// Config n8n para el navegador (lee las mismas variables de entorno que el servidor)
+app.get('/n8n-config.js', (req, res) => {
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-store');
+    res.send(N8N.toClientScript(N8N));
 });
 
 // Sirve archivos estáticos (index.html, etc.) — debe ir después de las rutas API

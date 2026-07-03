@@ -27,8 +27,18 @@
   <body class="bg-base text-white font-['Segoe_UI',sans-serif] h-screen">
     <div class="flex flex-col h-screen">
 
-      <div class="h-[65px] bg-surface border-b border-border flex items-center px-6 text-xl font-semibold shrink-0">
-        🤖 Polaria AI (MATEO COMPRA)
+      <div class="h-[65px] bg-surface border-b border-border flex items-center justify-between gap-4 px-6 shrink-0">
+        <span class="text-xl font-semibold truncate">🤖 Polaria AI (MATEO COMPRA)</span>
+        <div id="selector-proveedor-wrap" class="hidden items-center gap-2 text-sm shrink-0">
+          <span id="proveedor-activo-label" class="text-textMuted hidden md:inline"></span>
+          <label class="flex items-center gap-2">
+            <span class="text-textMuted hidden sm:inline">Proveedor</span>
+            <select
+              id="selector-proveedor"
+              class="bg-input border border-inputBorder text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-accent max-w-[220px]"
+            ></select>
+          </label>
+        </div>
       </div>
 
       <div id="chat" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scroll-smooth
@@ -58,10 +68,79 @@
     </div>
 
     <script src="/n8n-config.js"></script>
+    <script src="/chat-config.js"></script>
     <script src="/formato-texto.js"></script>
     <script>
-      const PHONE_NUMBER_ID = "1104260132766227";
-      const USER_PHONE = "+573508905382";
+      let proveedorActivo = CHAT.proveedores[0];
+
+      function normalizarTelefono(telefono) {
+        const limpio = telefono.trim();
+        return limpio.startsWith("+") ? limpio : `+${limpio}`;
+      }
+
+      function resolverProveedorInicial() {
+        const params = new URLSearchParams(window.location.search);
+        const telefonoUrl = params.get("telefono");
+        if (telefonoUrl) {
+          const telefono = normalizarTelefono(telefonoUrl);
+          const encontrado = CHAT.proveedores.find((p) => p.telefono === telefono);
+          if (encontrado) return encontrado;
+          return { telefono, nombre: telefono };
+        }
+
+        const guardado = localStorage.getItem("mateo_proveedor_telefono");
+        if (guardado) {
+          const encontrado = CHAT.proveedores.find((p) => p.telefono === guardado);
+          if (encontrado) return encontrado;
+          localStorage.removeItem("mateo_proveedor_telefono");
+        }
+
+        return CHAT.proveedores[0];
+      }
+
+      function actualizarEtiquetaProveedor() {
+        const label = document.getElementById("proveedor-activo-label");
+        if (!label || !proveedorActivo) return;
+        label.textContent = `${proveedorActivo.nombre} (${proveedorActivo.telefono})`;
+      }
+
+      function seleccionarProveedor(proveedor) {
+        proveedorActivo = proveedor;
+        localStorage.setItem("mateo_proveedor_telefono", proveedor.telefono);
+        const select = document.getElementById("selector-proveedor");
+        if (select) select.value = proveedor.telefono;
+        actualizarEtiquetaProveedor();
+      }
+
+      function inicializarSelectorProveedor() {
+        const wrap = document.getElementById("selector-proveedor-wrap");
+        const select = document.getElementById("selector-proveedor");
+
+        CHAT.proveedores.forEach((proveedor) => {
+          const option = document.createElement("option");
+          option.value = proveedor.telefono;
+          option.textContent = proveedor.nombre;
+          select.appendChild(option);
+        });
+
+        seleccionarProveedor(resolverProveedorInicial());
+        wrap.classList.remove("hidden");
+        wrap.classList.add("flex");
+
+        if (CHAT.proveedores.length === 1) {
+          select.classList.add("hidden");
+        }
+
+        select.addEventListener("change", () => {
+          const telefono = select.value;
+          const proveedor =
+            CHAT.proveedores.find((p) => p.telefono === telefono) ||
+            { telefono, nombre: telefono };
+          seleccionarProveedor(proveedor);
+        });
+      }
+
+      inicializarSelectorProveedor();
 
       const canalEscucha = new EventSource('/escuchar-mateo');
 
@@ -103,9 +182,9 @@
           entry: [{
             changes: [{
               value: {
-                metadata: { phone_number_id: PHONE_NUMBER_ID },
+                metadata: { phone_number_id: CHAT.phoneNumberId },
                 messages: [{
-                  from: USER_PHONE,
+                  from: proveedorActivo.telefono,
                   id: "wamid." + crypto.randomUUID().replace(/-/g, ""),
                   type: "text",
                   text: { body: texto },
@@ -116,13 +195,28 @@
         };
 
         try {
-          const response = await fetch(N8N.getUrl('mateocompras'), {
+          const response = await fetch("/enviar-mensaje", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
 
-          const data = await response.json();
+          const raw = await response.text();
+          let data = {};
+          if (raw) {
+            try {
+              data = JSON.parse(raw);
+            } catch {
+              data = { texto: raw };
+            }
+          }
+
+          if (!response.ok) {
+            const detalle = data.error || data.mensaje || raw || `HTTP ${response.status}`;
+            agregar(`Error al enviar (${response.status}): ${detalle}`, "ia");
+            return;
+          }
+
           const respuesta =
             data.texto ??
             data.reply ??
@@ -130,9 +224,11 @@
             data.mensaje ??
             data.message;
 
-          if (respuesta) agregar(respuesta, "ia");
+          if (respuesta) {
+            agregar(respuesta, "ia");
+          }
         } catch (error) {
-          agregar("Error al enviar el mensaje a n8n.", "ia");
+          agregar(`Error al enviar el mensaje: ${error.message}`, "ia");
         } finally {
           btn.disabled = false;
           btn.classList.remove("opacity-50");

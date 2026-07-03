@@ -4,6 +4,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const N8N = require('./n8n-config');
+const CHAT = require('./chat-config');
 
 function leerBodyWebhook(req, res, next) {
     const chunks = [];
@@ -118,6 +119,36 @@ app.get('/ping', (req, res) => {
     });
 });
 
+// Proxy del chat (evita CORS; usa MODO de n8n-config.js)
+app.post('/enviar-mensaje', async (req, res) => {
+    const url = N8N.getUrl('mateocompras');
+    console.log(`→ mateocompras [${N8N.MODO}]: ${url}`);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body),
+            signal: controller.signal,
+        });
+        const text = await response.text();
+        console.log(`← n8n respondió ${response.status}`);
+        res.status(response.status).type('application/json').send(text || '{}');
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            console.error('Timeout esperando respuesta de n8n (mateocompras)');
+            return res.status(504).json({ error: 'n8n no respondió en 60 segundos' });
+        }
+        console.error('Error reenviando a n8n (mateocompras):', err.message);
+        res.status(502).json({ error: err.message });
+    } finally {
+        clearTimeout(timeout);
+    }
+});
+
 // Proxy para MATEO PRUEBA JSON.html (evita CORS; usa MODO de n8n-config.js)
 app.post('/enviar-solicitud', async (req, res) => {
     const url = N8N.getUrl('solicitudcompra');
@@ -148,11 +179,17 @@ app.post('/enviar-solicitud', async (req, res) => {
     }
 });
 
-// Config n8n para el navegador (lee las mismas variables de entorno que el servidor)
+// Config para el navegador (lee las mismas variables de entorno que el servidor)
 app.get('/n8n-config.js', (req, res) => {
     res.type('application/javascript');
     res.set('Cache-Control', 'no-store');
     res.send(N8N.toClientScript(N8N));
+});
+
+app.get('/chat-config.js', (req, res) => {
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-store');
+    res.send(CHAT.toClientScript(CHAT));
 });
 
 // Sirve archivos estáticos (index.html, etc.) — debe ir después de las rutas API

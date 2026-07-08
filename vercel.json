@@ -7,11 +7,6 @@
     { "source": "/enviar-solicitud", "destination": "/api" },
     { "source": "/webhook-n8n", "destination": "/api" },
     { "source": "/ping", "destination": "/api" },
-    {
-      "source": "/",
-      "has": [{ "type": "method", "value": "POST" }],
-      "destination": "/api"
-    },
     { "source": "/(.*)", "destination": "/api" }
   ],
   "functions": {

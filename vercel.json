@@ -1,0 +1,21 @@
+{
+  "rewrites": [
+    { "source": "/n8n-config.js", "destination": "/api" },
+    { "source": "/chat-config.js", "destination": "/api" },
+    { "source": "/escuchar-mateo", "destination": "/api" },
+    { "source": "/enviar-mensaje", "destination": "/api" },
+    { "source": "/enviar-solicitud", "destination": "/api" },
+    { "source": "/webhook-n8n", "destination": "/api" },
+    { "source": "/ping", "destination": "/api" },
+    {
+      "source": "/",
+      "has": [{ "type": "method", "value": "POST" }],
+      "destination": "/api"
+    }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  }
+}

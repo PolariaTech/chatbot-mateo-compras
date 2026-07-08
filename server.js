@@ -192,12 +192,17 @@ app.get('/chat-config.js', (req, res) => {
     res.send(CHAT.toClientScript(CHAT));
 });
 
-// Sirve archivos estáticos (index.html, etc.) — debe ir después de las rutas API
-app.use(express.static(__dirname));
+// Archivos estáticos (public/) — local y fallback; en Vercel los sirve la CDN
+app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor local corriendo en http://localhost:${PORT}`);
-    console.log(`Modo n8n: ${N8N.MODO} → ${N8N.getUrl('solicitudcompra')}`);
-    console.log(`Para exponerlo usa: ngrok http ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+
+module.exports = app;
+
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Servidor local corriendo en http://localhost:${PORT}`);
+        console.log(`Modo n8n: ${N8N.MODO} → ${N8N.getUrl('solicitudcompra')}`);
+        console.log(`Para exponerlo usa: ngrok http ${PORT}`);
+    });
+}
